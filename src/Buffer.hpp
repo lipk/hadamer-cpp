@@ -2,66 +2,80 @@
 
 #include <array>
 #include <cassert>
+#include <memory>
 
-#include "Types.hpp"
+#include <Types.hpp>
+#include <Util.hpp>
 
 template<class T, u8 dim>
 struct Buffer
 {
+    static_assert (dim > 0, "Dimension must not be 0");
     NOT_COPYABLE(Buffer)
     NOT_MOVABLE(Buffer)
 
-    const std::array<u64, dim> size;
-    const std::array<u64, dim - 1> stride;
-    const T* data;
+    using DataType = T;
 
-    Buffer(std::array<u64, dim> size)
-        : size(std::move(size))
-    {
-        u64 bufferSize = size[0];
-        for (size_t i = 1; i < dim; ++i) {
-            this->stride[i - 1] = bufferSize;
-            bufferSize *= size[i];
-        }
-        this->data = new T[bufferSize];
-    }
+    std::array<u64, dim> size;
+    std::array<u64, dim - 1> stride;
+    T* data;
+
+    Buffer(std::array<u64, dim> size);
     ~Buffer() { delete[] this->data; }
 };
 
-template<class T, u8 dim>
+template<typename T, u8 dim>
 struct Array
 {
-    NOT_COPYABLE(Array)
-    NOT_MOVABLE(Array)
+    using DataType = T;
 
-    const Buffer<T, dim>* buffer;
-    const std::array<u64, dim> position, size;
-    const u64 offset;
+    std::shared_ptr<Buffer<T, dim>> buffer;
+    std::array<u64, dim> position, size;
+    u64 offset;
 
-    Array(const Buffer<T, dim>* buffer,
-          std::array<u64, dim> position,
-          std::array<u64, dim> size)
-        : buffer(buffer)
-        , position(std::move(position))
-        , size(std::move(size))
+    Array(std::shared_ptr<Buffer<T, dim>> buffer,
+          u64vec<dim> position,
+          u64vec<dim> size);
+
+    Array(const Array<T, dim>&) = default;
+    Array(Array<T, dim>&&) = default;
+    Array<T, dim>& operator =(const Array<T, dim>&) = default;
+    Array<T, dim>& operator =(Array<T, dim>&&) = default;
+
+    static Array<T, dim> createWithBuffer(u64vec<dim> size);
+    inline const T& operator[](const u64vec<dim>& coords) const;
+    inline T& operator[](const u64vec<dim>& coords);
+
+    struct Getter
     {
-        this->offset = this->position[0];
-        for (u8 i = 0; i < dim - 1; ++i) {
-            this->offset += this->size[i] * this->position[i + 1];
+        Array<T, dim> &array;
+        const u64vec<dim> base;
+
+        Getter(Array<T, dim>& array, const u64vec<dim>& base)
+            : array(array)
+            , base(base)
+        {}
+
+        template<typename ...XS>
+        inline const T& operator()(i64 x1, XS... xs) const {
+            auto offset = collect<dim>(x1, xs...);
+            return array[base + offset];
         }
+
+        template<typename ...XS>
+        inline T& operator()(i64 x1, XS... xs) {
+            auto offset = collect<dim>(x1, xs...);
+            return array[base + offset];
+        }
+    };
+
+    Getter getter(const u64vec<dim>& base) {
+        return Getter(*this, base);
     }
 
-    inline const T& operator[](const std::array<u64, dim>& coords) const
-    {
-        u64 index = this->offset + coords[0];
-        for (u8 i = 0; i < dim - 1; ++i) {
-            index += coords[i + 1] * this->buffer->stride[i];
-        }
-        return this->buffer->data[index];
-    }
-
-    inline T& operator[](const std::array<u64, dim>& coords)
-    {
-        return const_cast<T&>(this->operator[](coords));
+    const Getter getter(const u64vec<dim>& base) const {
+        return Getter(*this, base);
     }
 };
+
+#include <Buffer.impl.hpp>
