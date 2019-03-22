@@ -64,3 +64,11 @@ TEST_CASE("Synchronize Tree", "[mesh]")
     tree.restructure();
     tree.synchronize();
 }
+
+TEST_CASE("Apply kernel", "[mesh]")
+{
+    Tree<Config2D> tree;
+    tree.root->applyKernel<0>([](auto view) {
+
+    });
+}

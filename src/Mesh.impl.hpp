@@ -369,6 +369,15 @@ void Node<Config>::synchronizeRecursive()
 }
 
 template <typename Config>
+template <u64 grid, typename Function>
+void Node<Config>::applyKernel(const Function& func)
+{
+    Loop<dim>(1, Config::blockSize, [&](auto& it) {
+        func(DataView<Config>(this->data, it));
+    });
+}
+
+template <typename Config>
 void Node<Config>::propagateUp()
 {
     if (!this->isLeaf) {
@@ -398,6 +407,13 @@ void Node<Config>::propagateDown()
             }
         });
     }
+}
+
+template<typename Config>
+DataView<Config>::DataView(_tn Node<Config>::Arrays &data, u64vec<Config::dimension> base)
+    : data(data)
+    , base(base)
+{
 }
 
 template<typename Config>

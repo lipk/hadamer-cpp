@@ -48,6 +48,21 @@ void forEachImpl(const Func& func) {
 template <typename Func, u64 index>
 void forEachImpl(const Func&) {}
 
+template <u32 index, typename T, typename ...TS>
+struct GetNthType;
+
+template <typename T, typename ...TS>
+struct GetNthType<0, T, TS...>
+{
+    using Type = T;
+};
+
+template <u32 index, typename T, typename ...TS>
+struct GetNthType
+{
+    using Type = _tn GetNthType<index-1, TS...>::Type;
+};
+
 template <typename ...TS>
 struct TypeList
 {
@@ -64,6 +79,9 @@ struct TypeList
     static void forEach(const Func& func) {
         forEachImpl<Func, 0, TS...>(func);
     }
+
+    template<uint32_t index>
+    using Get = _tn GetNthType<index, TS...>::Type;
 
     using ToTuple = To<std::tuple>;
 };

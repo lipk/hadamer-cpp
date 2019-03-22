@@ -118,6 +118,24 @@ struct Node
                       const u64vec<dim>& fromDst);
     void synchronize();
     void synchronizeRecursive();
+
+    template <u64 grid, typename Function>
+    void applyKernel(const Function& func);
+};
+
+template<typename Config>
+struct DataView
+{
+    _tn Node<Config>::Arrays& data;
+    u64vec<Config::dimension> base;
+
+    DataView(_tn Node<Config>::Arrays& data, u64vec<Config::dimension> base);
+
+    template<uint32_t index, typename ...XS>
+    _tn Config::DataTypes::_tm Get<index>& get(i64 x1, XS... xs) {
+        auto offset = collect<Config::dimension>(x1, xs...);
+        return std::get<index>(this->data)[this->base + offset];
+    }
 };
 
 template<typename Config>
