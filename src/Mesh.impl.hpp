@@ -369,12 +369,18 @@ void Node<Config>::synchronizeRecursive()
 }
 
 template <typename Config>
-template <u64 grid, typename Function>
+template <typename Function>
 void Node<Config>::applyKernel(const Function& func)
 {
-    Loop<dim>(1, Config::blockSize, [&](auto& it) {
-        func(DataView<Config>(this->data, it));
-    });
+    if (this->isLeaf) {
+        Loop<dim>(1, Config::blockSize, [&](auto& it) {
+            func(DataView<Config>(this->data, it));
+        });
+    } else {
+        Loop<dim>(0, 2, [&](auto& it) {
+            this->children[it]->applyKernel(func);
+        });
+    }
 }
 
 template <typename Config>
@@ -505,4 +511,21 @@ void Tree<Config>::synchronize()
 {
     this->root->propagateUp();
     this->root->synchronize();
+}
+
+template <typename Config>
+template<typename Function>
+void Tree<Config>::applyKernel(const Function &func)
+{
+    this->root->applyKernel(func);
+}
+
+template <typename Config>
+template<typename Function>
+void Mesh<Config>::applyKernel(const Function &func)
+{
+    Loop<Config::dimension>(repeat<Config::dimension>(0UL),
+                            this->trees.size, [&](auto& it) {
+        this->trees[it].applyKernel(func);
+    });
 }

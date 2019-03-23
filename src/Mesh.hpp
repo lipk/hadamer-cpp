@@ -119,7 +119,7 @@ struct Node
     void synchronize();
     void synchronizeRecursive();
 
-    template <u64 grid, typename Function>
+    template <typename Function>
     void applyKernel(const Function& func);
 };
 
@@ -133,7 +133,7 @@ struct DataView
 
     template<uint32_t index, typename ...XS>
     _tn Config::DataTypes::_tm Get<index>& get(i64 x1, XS... xs) {
-        auto offset = collect<Config::dimension>(x1, xs...);
+        auto offset = collect<Config::dimension, i64>(x1, xs...);
         return std::get<index>(this->data)[this->base + offset];
     }
 };
@@ -149,12 +149,18 @@ struct Tree
 
     void restructure();
     void synchronize();
+
+    template <typename Function>
+    void applyKernel(const Function& func);
 };
 
 template<typename Config>
 struct Mesh
 {
     Array<Tree<Config>, Config::dimension> trees;
+
+    template <typename Function>
+    void applyKernel(const Function& func);
 };
 
 template<typename Config>

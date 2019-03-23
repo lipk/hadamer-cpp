@@ -90,22 +90,22 @@ std::array<T, L> repeat(T t) {
     return xs;
 }
 
-template<u8 dim, u8 index, typename T>
-void collectImpl(std::array<T, dim>&)
+template<u8 dim, u8 index, typename A>
+void collectImpl(std::array<A, dim>&)
 {
 }
 
-template<u8 dim, u8 index, typename T, typename ...TS>
-void collectImpl(std::array<T, dim>& arr, T t, TS... ts)
+template<u8 dim, u8 index, typename A, typename T, typename ...TS>
+void collectImpl(std::array<A, dim>& arr, T t, TS... ts)
 {
     arr[index] = t;
-    collectImpl<dim, index+1, TS...>(arr, ts...);
+    collectImpl<dim, index+1, A, TS...>(arr, ts...);
 }
 
 template<u8 dim, typename T, typename ...TS>
 std::array<T, dim> collect(T t, TS... ts)
 {
     std::array<T, dim> arr;
-    collectImpl<dim, 0, T, TS...>(arr, t, ts...);
+    collectImpl<dim, 0, T, T, TS...>(arr, t, ts...);
     return arr;
 }

@@ -68,7 +68,15 @@ TEST_CASE("Synchronize Tree", "[mesh]")
 TEST_CASE("Apply kernel", "[mesh]")
 {
     Tree<Config2D> tree;
-    tree.root->applyKernel<0>([](auto view) {
-
+    tree.root->action = REFINE;
+    tree.restructure();
+    tree.synchronize();
+    tree.applyKernel([](DataView<Config2D> view) {
+        view.get<0>(0, 0) = 4;
+    });
+    Loop<2>(0, 2, [&](auto& it1) {
+        Loop<2>(1, Config2D::blockSize, [&](auto& it2) {
+            CHECK(std::get<0>(tree.root->children[it1]->data)[it2] == 4);
+        });
     });
 }
