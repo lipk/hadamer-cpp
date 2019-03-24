@@ -373,8 +373,9 @@ template <typename Function>
 void Node<Config>::applyKernel(const Function& func)
 {
     if (this->isLeaf) {
+        this->action = DEREFINE;
         Loop<dim>(1, Config::blockSize, [&](auto& it) {
-            func(DataView<Config>(this->data, it));
+            func(DataView<Config>(*this, it));
         });
     } else {
         Loop<dim>(0, 2, [&](auto& it) {
@@ -416,9 +417,11 @@ void Node<Config>::propagateDown()
 }
 
 template<typename Config>
-DataView<Config>::DataView(_tn Node<Config>::Arrays &data, u64vec<Config::dimension> base)
-    : data(data)
+DataView<Config>::DataView(Node<Config> &node, u64vec<Config::dimension> base)
+    : node(node)
     , base(base)
+    , refine(false)
+    , derefine(false)
 {
 }
 
@@ -518,6 +521,27 @@ template<typename Function>
 void Tree<Config>::applyKernel(const Function &func)
 {
     this->root->applyKernel(func);
+}
+
+template<typename Config>
+Mesh<Config>::Mesh(const u64vec<Config::dimension> &size)
+    : trees(Array<Tree<Config>, Config::dimension>::createWithBuffer(size))
+{
+    Loop<Config::dimension>(repeat<Config::dimension>(0UL),
+                            this->trees.size, [&](auto& it) {
+        new (&this->trees[it]) Tree<Config>();
+    });
+    this->updateStructure();
+}
+
+template <typename Config>
+void Mesh<Config>::updateStructure()
+{
+    Loop<Config::dimension>(repeat<Config::dimension>(0UL),
+                            this->trees.size, [&](auto& it) {
+        this->trees[it].restructure();
+        this->trees[it].synchronize();
+    });
 }
 
 template <typename Config>

@@ -126,15 +126,24 @@ struct Node
 template<typename Config>
 struct DataView
 {
-    _tn Node<Config>::Arrays& data;
+    Node<Config>& node;
     u64vec<Config::dimension> base;
+    bool refine, derefine;
 
-    DataView(_tn Node<Config>::Arrays& data, u64vec<Config::dimension> base);
+    DataView(Node<Config>& node, u64vec<Config::dimension> base);
 
     template<uint32_t index, typename ...XS>
     _tn Config::DataTypes::_tm Get<index>& get(i64 x1, XS... xs) {
         auto offset = collect<Config::dimension, i64>(x1, xs...);
-        return std::get<index>(this->data)[this->base + offset];
+        return std::get<index>(this->node.data)[this->base + offset];
+    }
+
+    ~DataView() {
+        if (this->refine) {
+            node.action = REFINE;
+        } else if (this->derefine) {
+            node.action = node.action & DEREFINE;
+        }
     }
 };
 
@@ -158,6 +167,10 @@ template<typename Config>
 struct Mesh
 {
     Array<Tree<Config>, Config::dimension> trees;
+
+    Mesh(const u64vec<Config::dimension>& size);
+
+    void updateStructure();
 
     template <typename Function>
     void applyKernel(const Function& func);

@@ -80,3 +80,11 @@ TEST_CASE("Apply kernel", "[mesh]")
         });
     });
 }
+
+TEST_CASE("Construct Mesh")
+{
+    Mesh<Config2D> mesh({5, 5});
+    mesh.applyKernel([](DataView<Config2D> view) {
+        view.get<0>(0, 0) = 4;
+    });
+}
