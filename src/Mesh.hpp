@@ -141,11 +141,14 @@ struct DataView
     ~DataView() {
         if (this->refine) {
             node.action = REFINE;
-        } else if (this->derefine) {
-            node.action = node.action & DEREFINE;
+        } else if (!this->derefine && node.action == DEREFINE) {
+            node.action = NOTHING;
         }
     }
 };
+
+template<typename Config>
+struct Mesh;
 
 template<typename Config>
 struct Tree
@@ -153,8 +156,10 @@ struct Tree
     NOT_COPYABLE(Tree)
     NOT_MOVABLE(Tree)
 
+    Mesh<Config> *mesh;
+    u64vec<Config::dimension> selfPosition;
     Node<Config> *root;
-    Tree();
+    Tree(Mesh<Config>* mesh, u64vec<Config::dimension> selfPosition);
 
     void restructure();
     void synchronize();

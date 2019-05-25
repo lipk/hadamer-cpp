@@ -496,8 +496,10 @@ bool RefinePlan<Config>::merge(Self *other, u32 level)
 }
 
 template<typename Config>
-Tree<Config>::Tree()
+Tree<Config>::Tree(Mesh<Config> *mesh, u64vec<Config::dimension> selfPosition)
     : root(new Node<Config>())
+    , mesh(mesh)
+    , selfPosition(selfPosition)
 {
 }
 
